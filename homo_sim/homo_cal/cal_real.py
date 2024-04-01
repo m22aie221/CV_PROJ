@@ -8,6 +8,7 @@ import os
 from scipy.io import loadmat
 from skimage.color import rgb2lab, rgb2luv, rgb2xyz
 from skimage import img_as_float
+from ransachomocal_luv import ransachomocal_luv
 
 # Define utility functions
 
@@ -79,8 +80,11 @@ def print_table(de, Method, de_str=None):
 
 # Main script
 dbpath = '../data/HG_ColourChecker/'
-fmethod = [alshomocal, ransachomocal_luv, lscal, alsRPcal, rpcal]
-Method = ['ALS', 'ALS_RANSAC', 'LS', 'ALS_RP', 'RP']
+#fmethod = [alshomocal, ransachomocal_luv, lscal, alsRPcal, rpcal]
+#Method = ['ALS', 'ALS_RANSAC', 'LS', 'ALS_RP', 'RP']
+
+fmethod = [ransachomocal_luv]
+Method = ['ALS_RANSAC']
 
 # Discover a list of images for conversion
 fl = getAllFiles(os.path.join(dbpath, 'patch_real'))

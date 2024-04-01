@@ -4,6 +4,11 @@ In the code above, the uea_alsransac_luv, uea_homocvt, HGxyz2luv, and deltaE1976
 
 import numpy as np
 from scipy.optimize import least_squares
+#from ..homo_solver.uea_alsranac_luv import uea_alsransac_luv , uea_homocvt , HGxyz2luv
+
+from homo_solver.uea_alsranac_luv import uea_alsransac_luv, uea_homocvt, HGxyz2luv
+
+from deltaE1976 import deltaE1976
 
 def ransachomocal_luv(rgb, xyz, white, rgb_u):
     # Best error
@@ -34,18 +39,21 @@ def luv_err(xyz_est, xyz_std):
     err = deltaE1976(luv_ref, luv_est)
     return err
 
+"""
 
 def uea_alsransac_luv(rgb, xyz, white, threshold):
     # Your implementation here or call a relevant function
-
+    return
 
 def uea_homocvt(rgb_u, t_M):
     # Your implementation here or call a relevant function
-
+    return
 
 def HGxyz2luv(XYZ, white_ref):
     # Your implementation here or call a relevant function
-
+    return
 
 def deltaE1976(LUV_ref, LUV_est):
     # Your implementation here or call a relevant function
+    return
+"""
