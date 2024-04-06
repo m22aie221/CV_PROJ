@@ -30,7 +30,7 @@ def uea_alsransac_luv(x1, x2, white, t, mit=500):
     distfn = homogdist
     degenfn = isdegenerate
 
-    _, inliers = ransac(np.vstack((x1, x2)), fittingfn, distfn, lambda x: isdegenerate(x, xcomb), s, t, 0, 100, mit)
+    _, inliers = ransac(np.vstack((x1, x2)), fittingfn, distfn, lambda x: isdegenerate(x, xcomb), s, t, white, 0, 100, mit)
 
     # Now do a final least squares fit on the data points considered to
     # be inliers.
@@ -42,7 +42,7 @@ def uea_alsransac_luv(x1, x2, white, t, mit=500):
     return H, inliers
 
 
-def homogdist(H, x, t):
+def homogdist(H, x, t, white):
     nd = x.shape[0] // 2
     lx1 = x[:nd, :]   # Extract x1 and x2 from x
     lx2 = x[nd:, :]
@@ -68,6 +68,8 @@ def isdegenerate(x, xcomb):
     lx1 = x[:nd, :]   # Extract x1 and x2 from x
     lx2 = x[nd:, :]
 
+    xcomb_subtracted = [tuple(index - 1 for index in comb) for comb in xcomb]
+    xcomb = xcomb_subtracted
     ir1 = np.array([iscolinear_n(lx1[:, comb]) for comb in xcomb])
     ir2 = np.array([iscolinear_n(lx2[:, comb]) for comb in xcomb])
 
@@ -79,7 +81,7 @@ def wrap_als(x):
     return uea_H_from_x_als(x[:nd, :], x[nd:, :])
 
 
-def ransac(data, fittingfn, distfn, degenfn, s, t, feedback=0, maxDataTrials=100, maxTrials=1000):
+def ransac(data, fittingfn, distfn, degenfn, s, t, white, feedback=0, maxDataTrials=100, maxTrials=1000):
     N = data.shape[1]
     n = 1
     trials = 0
@@ -93,7 +95,7 @@ def ransac(data, fittingfn, distfn, degenfn, s, t, feedback=0, maxDataTrials=100
             dataInd = np.random.choice(N, size=s, replace=False)
         sample = data[:, dataInd]
         model = fittingfn(sample)
-        err = distfn(model, data, t)
+        err = distfn(model, data, t, white)
         inliers = err
         ninliers = len(inliers)
         if ninliers > s:
@@ -122,7 +124,34 @@ def iscolinear_n(points):
     return np.allclose(V[-1, :], 0)
 
 
+import cv2
+import numpy as np
+
 def HGxyz2luv(XYZ, white):
+    # Convert white point to CIE xyY format
+    xyY_white = cv2.cvtColor(np.uint8([[white]]), cv2.COLOR_BGR2XYZ)[0, 0]
+
+    # Convert XYZ to CIELUV color space
+    XYZ_white = cv2.cvtColor(np.uint8([[white]]), cv2.COLOR_BGR2XYZ)[0, 0]
+    XYZ_white = np.float32(XYZ_white)
+    XYZ = np.float32(XYZ)
+    eps = np.finfo(float).eps
+    Yn = XYZ_white[1]
+    Y = XYZ[..., 1]
+    u_prime = (4 * XYZ[..., 0]) / (np.sum(XYZ, axis=-1) + eps)
+    v_prime = (9 * XYZ[..., 1]) / (np.sum(XYZ, axis=-1) + eps)
+    u_prime_n = (4 * XYZ_white[0]) / (XYZ_white[0] + 15 * XYZ_white[1] + 3 * XYZ_white[2] + eps)
+    v_prime_n = (9 * XYZ_white[1]) / (XYZ_white[0] + 15 * XYZ_white[1] + 3 * XYZ_white[2] + eps)
+
+    L = np.where(Y / Yn > 0.008856, 116 * np.power(Y / Yn, 1 / 3) - 16, 903.3 * (Y / Yn))
+    u = 13 * L * (u_prime - u_prime_n)
+    v = 13 * L * (v_prime - v_prime_n)
+
+    return np.dstack((L, u, v))
+
+# Display or further process Luv_image
+
+def HGxyz2luv_mat(XYZ, white):
     # Perform the transformation
     eps = np.finfo(float).eps
     Yn = white[2]
